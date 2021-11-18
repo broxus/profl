@@ -1,2 +1,2 @@
 [workspace]
-members = ["profl"]
+members = ["profl", "profl-cli"]
