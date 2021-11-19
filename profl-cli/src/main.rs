@@ -25,7 +25,6 @@ struct Args {
     output: Option<String>,
 }
 
-
 #[derive(Serialize, Deserialize, Debug)]
 struct Log {
     took: u64,
@@ -47,9 +46,7 @@ fn logs_stream<P: AsRef<std::path::Path>>(path: P, filter: Option<String>) -> Re
         None => None,
         Some(a) => {
             let names: HashSet<String> = a.split(',').map(|x| x.to_string()).collect();
-            Some(move |x: &str| {
-                names.contains(x)
-            })
+            Some(move |x: &str| names.contains(x))
         }
     };
 
@@ -59,23 +56,24 @@ fn logs_stream<P: AsRef<std::path::Path>>(path: P, filter: Option<String>) -> Re
     let mut all = HashMap::new();
 
     loop {
-        let data =
-            match read_segment(&mut reader) {
-                Ok(a) => a,
-                Err(e) => {
-                    if reader.fill_buf()?.is_empty() {
-                        break;
-                    }
-                    println!("Failed deserializing: {:#?}", e);
+        let data = match read_segment(&mut reader) {
+            Ok(a) => a,
+            Err(e) => {
+                if reader.fill_buf()?.is_empty() {
                     break;
                 }
-            };
+                println!("Failed deserializing: {:#?}", e);
+                break;
+            }
+        };
         *all.entry(data.id.clone()).or_insert(0) += 1;
         if let Some(ref filter) = filter {
             if filter(&data.id) {
                 res.push(data);
             }
-        } else { res.push(data) }
+        } else {
+            res.push(data)
+        }
     }
 
     println!("All ids:");
@@ -86,19 +84,27 @@ fn logs_stream<P: AsRef<std::path::Path>>(path: P, filter: Option<String>) -> Re
     Ok(res)
 }
 
-fn read_segment<R>(bytes: R) -> Result<Record> where R: Read {
-    bincode::options().deserialize_from(bytes).context("Failed deserilzing from")
+fn read_segment<R>(bytes: R) -> Result<Record>
+where
+    R: Read,
+{
+    bincode::options()
+        .deserialize_from(bytes)
+        .context("Failed deserilzing from")
 }
 
 fn main() -> Result<()> {
     let args: Args = argh::from_env();
     let path = PathBuf::from(&args.path);
-    let output = args.output.as_ref().map(PathBuf::from).unwrap_or_else(|| PathBuf::from("plot.svg"));
+    let output = args
+        .output
+        .as_ref()
+        .map(PathBuf::from)
+        .unwrap_or_else(|| PathBuf::from("plot.svg"));
     let data = logs_stream(&path, args.filter)?;
     plot(data, output)?;
     Ok(())
 }
-
 
 fn plot(data: Vec<Record>, out: PathBuf) -> Result<()> {
     let map = data.into_iter().into_group_map_by(|x| x.id.clone()); //todo bench me
@@ -120,7 +126,7 @@ fn plot(data: Vec<Record>, out: PathBuf) -> Result<()> {
 
         let data = records.iter().copied().map(|y| y / div);
         let (min, max) = match data.clone().minmax() {
-            MinMaxResult::MinMax(min, max) => { (min, max) }
+            MinMaxResult::MinMax(min, max) => (min, max),
             _ => anyhow::bail!("No data"),
         };
 
@@ -136,26 +142,23 @@ fn plot(data: Vec<Record>, out: PathBuf) -> Result<()> {
             .y_label_formatter(&|y| format!("{:.0} {}", *y, label))
             .draw()?;
 
-
-        ctx.draw_series(AreaSeries::new(
-            data.enumerate().map(|(x, y)| (x as u64, y)), // The data iter
-            0,                                  // Baseline
-            &RED.mix(0.2), // Make the series opac
-        ).border_style(&RED) // Make a brighter border)?;
+        ctx.draw_series(
+            AreaSeries::new(
+                data.enumerate().map(|(x, y)| (x as u64, y)), // The data iter
+                0,                                            // Baseline
+                &RED.mix(0.2),                                // Make the series opac
+            )
+            .border_style(&RED), // Make a brighter border)?;
         )?;
     }
     root.present()?;
     Ok(())
 }
 
-
 fn histogram_print(h: hdrhistogram::Histogram<u64>) -> String {
     {
         println!("Distribution");
-        for v in break_once(
-            h.iter_quantiles(10),
-            |v| v.quantile() > 0.95,
-        ) {
+        for v in break_once(h.iter_quantiles(10), |v| v.quantile() > 0.95) {
             println!(
                 "{:4}µs | {:40} | {:4.1}th %-ile",
                 (v.value_iterated_to() + 1) / 1_000,
@@ -164,14 +167,14 @@ fn histogram_print(h: hdrhistogram::Histogram<u64>) -> String {
                 ),
                 v.percentile(),
             );
-        };
+        }
     }
 
     // until we have https://github.com/rust-lang/rust/issues/62208
-    fn break_once<I, F>(it: I, mut f: F) -> impl Iterator<Item=I::Item>
-        where
-            I: IntoIterator,
-            F: FnMut(&I::Item) -> bool,
+    fn break_once<I, F>(it: I, mut f: F) -> impl Iterator<Item = I::Item>
+    where
+        I: IntoIterator,
+        F: FnMut(&I::Item) -> bool,
     {
         let mut got_true = false;
         it.into_iter().take_while(move |i| {
@@ -209,7 +212,7 @@ impl Time {
             9..=u16::MAX => ("sec", 1_000_000_000),
             6..=8 => ("millis", 1_000_000),
             3..=5 => ("micros", 1_000),
-            _ => ("nanos", 1)
+            _ => ("nanos", 1),
         }
     }
 }
