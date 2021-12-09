@@ -1,7 +1,12 @@
 [package]
 name = "profl"
+description = "Simple timings profiler"
 version = "0.1.0"
 edition = "2021"
+repository = "https://github.com/broxus/profl"
+keywords = ["metrics"]
+categories = ["development-tools::profiling"]
+license-file = "../LICENSE"
 
 [dependencies]
 bincode = "1.3"
