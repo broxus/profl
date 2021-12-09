@@ -1,11 +1,12 @@
 [package]
 name = "profl-cli"
 description = "CLI for generating profl reports"
-version = "0.1.0"
+version = "0.1.1"
 edition = "2021"
 repository = "https://github.com/broxus/profl"
 keywords = ["metrics"]
 categories = ["development-tools::profiling"]
+include = ["src/**/*.rs", "README.md", "LICENSE"]
 license-file = "../LICENSE"
 
 [[bin]]

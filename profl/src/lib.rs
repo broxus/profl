@@ -16,9 +16,11 @@
 /// }
 /// ```
 ///
+#[cfg(feature = "active")]
 use std::io::Write;
 use std::path::Path;
 
+#[cfg(feature = "active")]
 use bincode::Options;
 use crossbeam_channel::Sender;
 use serde::{Deserialize, Serialize};
